@@ -16,6 +16,17 @@ jobs:
       - name: Build
         run: cd doc; ./build_local.sh && zip -r documentation.zip build/html/*
 
+      - name: Dump Github context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      # - name: Get artifacts from commit
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     commit: ${{github.event.}}
+      #     workflow: on_commit.yml
+      #     path: old
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
