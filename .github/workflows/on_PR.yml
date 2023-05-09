@@ -30,7 +30,7 @@ jobs:
 
   Build_samples_and_tests:
     needs: ValidateCodeCompliance
-    uses: nrfconnect/sdk-sidewalk/.github/workflows/common_build_samples.yml@main
+    uses: RobertGalatNordic/sdk-sidewalk/.github/workflows/common_build_samples.yml@main
   
   Save_PR_number:
     runs-on: ubuntu-latest
