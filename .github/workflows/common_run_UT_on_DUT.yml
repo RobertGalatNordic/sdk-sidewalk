@@ -1,0 +1,62 @@
+name: Run UT on boards
+on:
+  workflow_call:
+
+jobs:
+  Run_tests_on_DUT:
+    runs-on: self-hosted
+    steps:
+      - name: Initial setup
+        run: |
+          echo "/home/sidewalk/.local/bin" >> $GITHUB_PATH
+          echo "/usr/local/sbin" >> $GITHUB_PATH
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          echo "/usr/sbin" >> $GITHUB_PATH
+          echo "/usr/bin" >> $GITHUB_PATH
+          echo "/sbin" >> $GITHUB_PATH
+          echo "/bin" >> $GITHUB_PATH
+          echo "/usr/share" >> $GITHUB_PATH
+          echo "/snap/bin" >> $GITHUB_PATH
+          rm -rf sidewalk artifacts twister-out* .west
+          
+      - uses: actions/checkout@v3
+        with:
+          path: sidewalk
+
+      - name: update nrf
+        run: |
+          west init -l sidewalk
+          west update --narrow -o=--depth=1
+          python3 -m pip install zephyr/scripts/requirements.txt
+  
+      - name: Get build artifacts 
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name_is_regexp: true
+          name: tests-nrf.*-.*
+          path: artifacts
+
+      - name: Combine twister outputs
+        run: |
+          shopt -s extglob
+          pr_reports=$(ls artifacts/tests-*/twister.json)
+          mkdir twister-out
+          cp -r artifacts/tests-*/!(twister.json) twister-out/
+          python3 sidewalk/scripts/ci/combine_twister_reports.py $pr_reports twister-out/twister.json
+
+      - name: Run Tests
+        run: |
+          zephyr/scripts/twister -vvv --inline-logs --test-only --hardware-map /hw_settings/hardware_map.yaml --device-testing --west-flash=--recover,--erase -T sidewalk/tests --retry-failed 1
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: tests-DUT_result
+          path: |
+            twister-out/twister.xml
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf sidewalk artifacts twister-out* .west
