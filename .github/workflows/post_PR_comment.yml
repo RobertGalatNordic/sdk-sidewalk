@@ -12,6 +12,8 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
+      contents: read
+      checks: write
       
     steps:
       - name: Checkout
@@ -59,3 +61,12 @@ jobs:
           issue-number: ${{ steps.get-pr-number.outputs.pr_number }}
           body-path: memory_usage.md
           edit-mode: replace
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          check_name: Unit Test Results
+          files: "current/*/twister.xml"
+          comment_mode: always
+          commit: ${{github.event.workflow_run.event.pull_request.head.sha}}
