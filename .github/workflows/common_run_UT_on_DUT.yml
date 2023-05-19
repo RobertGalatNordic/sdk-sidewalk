@@ -29,19 +29,16 @@ jobs:
           west update --narrow -o=--depth=1
           python3 -m pip install -r zephyr/scripts/requirements.txt
   
-      - name: Get build artifacts 
-        uses: dawidd6/action-download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
-          name_is_regexp: true
-          name: tests-nrf.*-.*
           path: artifacts
 
       - name: Combine twister outputs
         run: |
           shopt -s extglob
-          pr_reports=$(ls artifacts/tests-*/twister.json)
+          pr_reports=$(ls artifacts/tests-nrf*/twister.json)
           mkdir twister-out
-          cp -r artifacts/tests-*/!(twister.json) twister-out/
+          cp -r artifacts/tests-nrf*/!(twister.json) twister-out/
           python3 sidewalk/scripts/ci/combine_twister_reports.py $pr_reports twister-out/twister.json
 
       - name: Run Tests
