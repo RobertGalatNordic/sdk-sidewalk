@@ -33,15 +33,18 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           name_is_regexp: true
-          name: tests-nrf.*-.*
+          name: tests-nrf.*-twister-artifacts-.*
           path: artifacts
 
       - name: Combine twister outputs
         run: |
           shopt -s extglob
-          pr_reports=$(ls artifacts/tests-*/twister.json)
+          for d in artifacts/*; do
+          tar -xf $d/*.tar.bz2
+          done
+          pr_reports=$(ls artifacts/*/twister-out/twister.json)
           mkdir twister-out
-          cp -r artifacts/tests-*/!(twister.json) twister-out/
+          cp -r artifacts/test-*/twister-out/!(twister.json) twister-out/
           python3 sidewalk/scripts/ci/combine_twister_reports.py $pr_reports twister-out/twister.json
 
       - name: Run Tests
@@ -55,6 +58,8 @@ jobs:
           name: tests-DUT_result
           path: |
             twister-out/twister.xml
+            twister-out/**/handler.log
+            twister-out/**/device.log
       
       - name: Cleanup
         if: always()

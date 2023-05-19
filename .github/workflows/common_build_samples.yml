@@ -90,7 +90,7 @@ jobs:
           west update --narrow -o=--depth=1
 
       - name: Build test artifacts for ${{ matrix.platform }}
-        run: /workdir/zephyr/scripts/twister --platform ${{ matrix.platform }} --testsuite-root /workdir/sidewalk/tests/ --inline-logs -vvv --build-only --subset ${{ matrix.subset }}/${{ env.MAX_SUBSETS }}
+        run: /workdir/zephyr/scripts/twister --platform ${{ matrix.platform }} --testsuite-root /workdir/sidewalk/tests/ --inline-logs -vvv --prep-artifacts-for-testing --package-artifacts test_artifacts.tar.bz2  --subset ${{ matrix.subset }}/${{ env.MAX_SUBSETS }}
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
@@ -107,6 +107,14 @@ jobs:
             twister-out/**/zephyr/.config
             twister-out/**/build.log
             twister-out/twister.json
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: tests-${{ matrix.platform }}-twister-artifacts-${{ matrix.subset }}_of_${{ env.MAX_SUBSETS }}
+          path: |
+            test_artifacts.tar.bz2
 
   Build_and_run_tests_for_x86:
     strategy:
@@ -153,6 +161,7 @@ jobs:
             twister-out/**/zephyr/dfu_application.zip
             twister-out/**/zephyr/.config
             twister-out/**/build.log
+            twister-out/**/handler.log
             twister-out/twister.json
       
       - name: Upload test results
