@@ -67,6 +67,7 @@ jobs:
         if: always()
         with:
           check_name: Unit Test Results
-          files: "current/*/twister.xml"
+          files: "current/**/twister.xml"
           comment_mode: always
           commit: ${{github.event.workflow_run.event.pull_request.head.sha}}
+          search_pull_requests: true
