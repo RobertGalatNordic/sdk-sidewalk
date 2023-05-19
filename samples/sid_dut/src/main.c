@@ -25,6 +25,7 @@ int main(void)
 	if (e != SID_ERROR_NONE) {
 		LOG_ERR("sidwalk failed to initialize with error (sid_error_t) %d", e);
 	}
+	LOG_INF("test commit");
 
 	return 0;
 }
