@@ -29,8 +29,13 @@ jobs:
           west update --narrow -o=--depth=1
           python3 -m pip install -r zephyr/scripts/requirements.txt
   
-      - uses: actions/download-artifact@v3
+      - name: Get artifacts from PR base
+        uses: dawidd6/action-download-artifact@v2
         with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name_is_regexp: true
+          name: tests-nrf.*
+          workflow: on_PR.yml
           path: artifacts
 
       - name: Combine twister outputs
@@ -43,7 +48,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          zephyr/scripts/twister -vvv --inline-logs --test-only --hardware-map /hw_settings/hardware_map.yaml --device-testing --west-flash=--recover,--erase -T sidewalk/tests --retry-failed 1
+          zephyr/scripts/twister -vvv --inline-logs --test-only --hardware-map /hw_settings/hardware_map.yaml --device-testing --west-flash=--recover -T sidewalk/tests --retry-failed 1
       
       - name: Upload test results
         uses: actions/upload-artifact@v3
