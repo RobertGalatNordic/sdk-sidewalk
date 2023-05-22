@@ -55,6 +55,16 @@ jobs:
             twister-out/**/handler.log
             twister-out/**/device.log
       
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          check_name: Unit Test Results
+          files: |
+            twister-out/twister.xml
+            artifacts/**/twister.xml
+          comment_mode: off
+      
       - name: Cleanup
         if: always()
         run: |
