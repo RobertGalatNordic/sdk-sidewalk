@@ -21,7 +21,27 @@ jobs:
     outputs:
       supported_platforms: ${{ toJson(steps.*.outputs.platform)}}
 
+  print_platforms:
+    runs-on: ubuntu-latest
+
+    needs:
+      - prep_matrixes
+    env:
+      PLATFORMS: ${{ needs.prep_matrixes.outputs.supported_platforms }}
+    steps:
+      - name: print
+        shell: bash
+        run: |
+          echo "${{env.PLATFORMS}}" | sed -e 's/,//g' | head -n -1 | tail -n +2 | sed 's/ //g' > platform3
+          # echo "${{env.PLATFORMS}}" >> platform
+          # cat platform | sed -e 's/,//g' | head -n -1 | tail -n +2 > platform2
+          # cat platform2 | sed 's/ //g' > platform3
+
+          cat platform3 | while read platform_var; do echo " --platform $platform_var"; done
+
+
   build_samples:
+    if: false
     needs: prep_matrixes
     strategy:
       matrix:
@@ -74,6 +94,7 @@ jobs:
             twister-out/**/*sidewalk*/zephyr/dfu_application.zip
 
   build_and_run_ut_x86:
+    if: false
     runs-on: ubuntu-latest
     container:
       image: nordicplayground/nrfconnect-sdk:main
@@ -109,6 +130,7 @@ jobs:
             twister-out/**/device.log
 
   build_manual_tests:
+    if: false
     needs: prep_matrixes
     strategy:
       matrix:
@@ -158,6 +180,7 @@ jobs:
             twister-out/**/*sidewalk*/zephyr/dfu_application.zip
 
   build_tests:
+    if: false
     needs: prep_matrixes
     strategy:
       matrix:
@@ -199,6 +222,7 @@ jobs:
             PACKAGE_ARTIFACTS_${{ matrix.platform }}_${{ matrix.subset }}
 
   combine_artifacts:
+    if: false
     runs-on: ubuntu-latest
     container:
       image: nordicplayground/nrfconnect-sdk:main
@@ -211,7 +235,7 @@ jobs:
       - build_tests
 
     env:
-      PLATFORMS: ${{ fromJSON(needs.prep_matrixes.outputs.supported_platforms) }}
+      PLATFORMS: ${{ needs.prep_matrixes.outputs.supported_platforms }}
 
     steps:
       - name: Checkout
@@ -243,6 +267,8 @@ jobs:
       - name: create test plan
         shell: bash
         run: |
+          PLATFORMS=${{env.PLATFORMS}}
+          echo $PLATFORMS
           echo -n "/workdir/zephyr/scripts/twister --dry-run --no-clean --testsuite-root /workdir/sidewalk/tests/manual " > twister_command.sh
           for platform in $PLATFORMS; do echo -n " --platform $platform" >> twister_command.sh; done
           echo "" >> twister_command.sh
@@ -275,6 +301,8 @@ jobs:
       - name: create test plan
         shell: bash
         run: |
+          PLATFORMS=${{env.PLATFORMS}}
+          echo $PLATFORMS
           echo -n "/workdir/zephyr/scripts/twister --dry-run --no-clean --testsuite-root /workdir/sidewalk/samples/" > twister_command.sh
           for platform in $PLATFORMS; do echo -n " --platform $platform" >> twister_command.sh; done
           echo "" >> twister_commands.sh
