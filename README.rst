@@ -23,3 +23,4 @@ Support
 *******
 
 To ask questions about Sidewalk in the nRF Connect SDK, refer to https://devzone.nordicsemi.com.
+delete this change made only for tests
