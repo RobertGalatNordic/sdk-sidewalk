@@ -51,8 +51,11 @@ jobs:
         run: |
           cp -r ../sdk-sidewalk /workdir/sidewalk
           cd /workdir
+          ls -lah
           west config manifest.path sidewalk
           west config manifest.file internal_west.yml
+          cat /workdir/.west/config
+          echo "Update west"
           west update --narrow -o=--depth=1
 
       - name: Twister build samples
