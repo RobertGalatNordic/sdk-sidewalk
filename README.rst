@@ -23,3 +23,4 @@ Support
 *******
 
 To ask questions about Sidewalk in the nRF Connect SDK, refer to https://devzone.nordicsemi.com.
+dummy change to test PR
