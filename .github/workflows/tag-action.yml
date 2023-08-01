@@ -59,7 +59,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/sample-artifacts
+          file: artifacts/sample-artifacts.tar.gz
           asset_name: sample-artifacts.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
@@ -69,7 +69,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/tests-dut-artifacts
+          file: artifacts/tests-dut-artifacts.tar.gz
           asset_name: tests-dut-artifacts.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
@@ -79,7 +79,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/tests-manual-artifacts
+          file: artifacts/tests-manual-artifacts.tar.gz
           asset_name: tests-manual-artifacts.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
