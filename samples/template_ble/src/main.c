@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+#include "zephyr/sys/printk.h"
 #include <sid_api.h>
 #include <sid_error.h>
 #include <sid_pal_assert_ifc.h>
@@ -112,6 +113,7 @@ static void app_setup(void)
 int main(void)
 {
 	PRINT_SIDEWALK_VERSION();
+	printk("new message that will change the flash usage of this sample");
 
 	switch (application_to_start()) {
 	case SIDEWALK_APPLICATION: {
