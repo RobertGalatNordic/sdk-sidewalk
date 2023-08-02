@@ -20,7 +20,7 @@ jobs:
       - name: Upload documentation
         uses: actions/upload-artifact@v3
         with:
-          name: documentation.zip
+          name: documentation
           path: |
             doc/documentation.zip
 
@@ -56,7 +56,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: artifacts/*.zip
+          file: artifacts/**/*.zip
           file_glob: true
           overwrite: true
           prerelease: ${{ steps.check-tag.outputs.prerelease }}
