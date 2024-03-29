@@ -2,11 +2,10 @@ name: Build and run DUT tests
 on:
   workflow_call:
     inputs:
-      change_nrf_revision:
-        description: 'change revision of nrf in west.yml to `main`'
+      nrf_revision:
+        type: string
         required: false
-        type: boolean
-        default: false
+        default: "main"
       subset:
         description: ""
         required: true
@@ -26,7 +25,7 @@ on:
         default: true
 
 jobs:
-  build_tests:
+  build_dut_tests:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/nrfconnect/sdk-sidewalk:main
@@ -37,51 +36,37 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: sidewalk
+
+      - name: update NRF
+        run: |
+          cd sidewalk &&  git rev-parse HEAD > /workdir/sidewalk_hash; cd ..
+          west init -m https://github.com/nrfconnect/sdk-nrf --mr ${{inputs.nrf_revision}} .
+          west config manifest.group-filter +sidewalk
+          west update -n -o=--depth=1 --path-cache /workdir/
+          cd sidewalk; git checkout `cat /workdir/sidewalk_hash`; rm -rf /workdir/sidewalk_hash
+
 
       - name: Install Python dependencies
         run: |
-          apt install -y sudo
+          python3 -m pip install -r nrf/scripts/requirements.txt -r zephyr/scripts/requirements.txt -r sidewalk/scripts/ci/requirements.txt
 
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: build_tests-${{ inputs.subset }}
-
-      - name: Install Python dependencies
+      - name: Build DUT test artifacts
         run: |
-          python3 -m pip install -r scripts/ci/requirements.txt
-
-      - name: change_nrf_revision
-        if: ${{ inputs.change_nrf_revision }}
-        run: |
-          python3 scripts/ci/replace_nrf_revision_in_west.py internal_west.yml
-
-      - name: Reconfigure west
-        run: |
-          source /workdir/zephyr/zephyr-env.sh
-          cp -r ../sdk-sidewalk /workdir/internal_sidewalk
-          cd /workdir
-          west config manifest.path internal_sidewalk && \
-          west config manifest.file internal_west.yml && \
-          west update --narrow -o=--depth=1 && \
-          ln -s internal_sidewalk sidewalk
-
-      - name: Build test artifacts
-        run: |
-          source /workdir/zephyr/zephyr-env.sh
-          west twister --platform ${{inputs.target_board}} --testsuite-root /workdir/sidewalk/tests --filter runnable --shuffle-tests --shuffle-tests-seed 123 --inline-logs --overflow-as-errors -vvv --prep-artifacts-for-testing --package-artifacts PACKAGE_ARTIFACTS_${{ inputs.subset }}.tar.bz2 --subset ${{ inputs.subset }}/${{ inputs.max_subsets }}
+          source zephyr/zephyr-env.sh
+          west twister --platform ${{inputs.target_board}} --testsuite-root sidewalk --filter runnable --shuffle-tests --shuffle-tests-seed 123 --inline-logs --overflow-as-errors -vvv --prep-artifacts-for-testing --package-artifacts PACKAGE_ARTIFACTS_${{ inputs.subset }}.tar.bz2 --subset ${{ inputs.subset }}/${{ inputs.max_subsets }}
 
       - name: save build artifacts
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: PACKAGE_ARTIFACTS_${{ inputs.subset }}.tar.bz2
-          key: DUT_artifacts_${{inputs.target_board}}_${{ inputs.subset }}_${{ github.sha }}
+          key: DUT_artifacts_${{inputs.target_board}}_${{ inputs.subset }}_${{ github.sha }}_${{ github.run_id }}
 
   run_dut_ut:
-    needs: [build_tests]
+    needs: [build_dut_tests]
     if: ${{ fromJson(inputs.run_tests) }}
     continue-on-error: true
     runs-on: [self-hosted, linux, x64, "${{inputs.target_board}}"]
@@ -97,20 +82,28 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: sidewalk
+
+      - name: update NRF
+        run: |
+          cd sidewalk &&  git rev-parse HEAD > /workdir/sidewalk_hash; cd ..
+          west init -m https://github.com/nrfconnect/sdk-nrf --mr ${{inputs.nrf_revision}} .
+          west config manifest.group-filter +sidewalk
+          west update -n -o=--depth=1 --path-cache /workdir/
+          cd sidewalk; git checkout `cat /workdir/sidewalk_hash`; rm -rf /workdir/sidewalk_hash
 
       - name: Install Python dependencies
         run: |
           python3 -m pip install -r sidewalk/scripts/ci/requirements.txt
 
       - name: Get build artifacts
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         id: cache
         with:
           path: PACKAGE_ARTIFACTS_${{ inputs.subset }}.tar.bz2
-          key: DUT_artifacts_${{inputs.target_board}}_${{ inputs.subset }}_${{ github.sha }}
+          key: DUT_artifacts_${{inputs.target_board}}_${{ inputs.subset }}_${{ github.sha }}_${{ github.run_id }}
           fail-on-cache-miss: true
 
       - name: Fail on missing artifacts
@@ -120,23 +113,24 @@ jobs:
       - name: Unwrap artifacts
         run: |
           tar -xf PACKAGE_ARTIFACTS_${{ inputs.subset }}.tar.bz2
-          mv sidewalk /workdir/
 
       - name: Run Tests
         run: |
-          source /workdir/zephyr/zephyr-env.sh
-          west twister --no-clean -vvv --inline-logs --test-only --hardware-map /__w/hardware_map.yaml --device-testing -T /workdir/sidewalk/tests --retry-failed 2 --west-flash="--recover,--erase"
+          source zephyr/zephyr-env.sh
+          west twister --no-clean -vvv --inline-logs --test-only --hardware-map /__w/hardware_map.yaml --device-testing -T sidewalk --retry-failed 2 --west-flash="--recover,--erase"
 
       - name: rename_twister_xml_report
         run: |
           mv twister-out/twister.xml twister-out/${{inputs.target_board}}_${{ inputs.subset }}_twister.xml
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tests-dut_result
+          name: tests-dut_result_${{inputs.target_board}}_${{ inputs.subset }}
           path: |
             twister-out/${{inputs.target_board}}_${{ inputs.subset }}_twister.xml
             twister-out/**/handler.log
             twister-out/**/device.log
+            twister-out/**/zephyr.hex
+            twister-out/**/zephyr.elf
