@@ -21,7 +21,7 @@ jobs:
   verify_PR:
     uses: ./.github/workflows/validate_code_style.yml
     with:
-      reference_commit: ${{ github.base_ref }}
+      reference_commit: ${{ github.event.pull_request.base.sha }}
 
   save_pr_number:
     runs-on: ubuntu-latest
