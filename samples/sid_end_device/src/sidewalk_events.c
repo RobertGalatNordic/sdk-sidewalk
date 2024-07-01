@@ -356,8 +356,6 @@ void sidewalk_event_file_transfer(sidewalk_ctx_t *sid, void *ctx)
 		if (e != SID_ERROR_NONE) {
 			LOG_ERR("sbdt cancel ret %s", SID_ERROR_T_STR(e));
 		}
-
-		break;
 	}
 #endif /* CONFIG_SIDEWALK_FILE_TRANSFER_DFU */
 	const struct sid_bulk_data_transfer_buffer sbdt_buffer = {
